@@ -60,12 +60,26 @@ def to_image(pathfile,
              width=8,
              height=8,
              name="temp",
-             xshift=0):
+             xshift=0,
+             caption=""):
     return rf"""
 \node[
     canvas is zy plane at x={xshift}
 ] ({name}) at {to}
 {{\includegraphics[width={width}cm,height={height}cm]{{{pathfile}}}}};
+\node[below=20pt of {name}] {{{caption}}};
+"""
+
+
+def to_input_with_caption(pathfile,
+                          to='(-3,0,0)',
+                          width=8,
+                          height=8,
+                          name="temp",
+                          caption=""):
+    return r"""
+""" + to_input(pathfile, to=to, width=width, height=height, name=name) + r"""
+\node[below=20pt of """ + name + """] {""" + caption + """};
 """
 
 
@@ -75,8 +89,8 @@ arch = [
     to_begin(),
     
     #input
-    to_input( 'mask.png', to="(-6,0,0)" ),
-    to_input( 'input.png' ),
+    to_input_with_caption('mask.png', to="(-6,0,0)", name="mask_img", caption="\\Huge mask"),
+    to_input_with_caption('input.png', name="input_img", caption="\\Huge input"),
 
     #block-001
     to_ConvConvRelu( name='ccr_b1', s_filer=144, n_filer=(64,64), offset="(0,0,0)", to="(0,0,0)", width=(2,2), height=40, depth=40  ),
@@ -101,7 +115,13 @@ arch = [
     
     to_ConvSoftMax( name="sigmoid1", s_filer=144, offset="(0.75,0,0)", to="(end_b9-east)", width=1, height=40, depth=40, caption="" ),
     to_connection( "end_b9", "sigmoid1"),
-    to_image("output.png", to="(sigmoid1-east)", xshift=1.0),
+    to_image("output.png", to="(sigmoid1-east)", xshift=1.0, name="output_img", caption="\\Huge output"),
+    
+    to_ConvReLU( name='sample_convrel', s_filer="", n_filer="", offset="(11,0,20)", to="(0, 0, 0)", width=4, height=4, depth=4, caption=r"\parbox{" + "100pt" + r"}{" + "\\Large Convolution + BatchNorm + ReLU" + r"}" ),
+    to_UnPoolReLU( name='sample_unpoolrel', s_filer="", n_filer="", offset="(5,0,0)", to="(sample_convrel-east)", width=4, height=4, depth=4, caption=r"\parbox{" + "90pt" + r"}{" + "\\Large Transposed convolution + ReLU" + r"}" ),
+    to_Pool( name='sample_pool', offset="(5,0,0)", to="(sample_unpoolrel-east)", width=4, height=4, depth=4, caption=r"\parbox{" + "100pt" + r"}{" + "\\Large Max Pooling" + r"}", opacity=0.5 ),
+    to_SoftMax( name='sample_softmax', s_filer="", offset="(5,0,0)", to="(sample_pool-east)", width=4, height=4, depth=4, caption=r"\parbox{" + "100pt" + r"}{" + "\\Large Softmax" + r"}", opacity=0.5 ),
+    
     to_end() 
     ]
 
